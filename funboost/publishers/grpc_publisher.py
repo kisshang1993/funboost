@@ -32,7 +32,7 @@ class GrpcPublisher(AbstractPublisher, ):
 
         """
         用法例子
-        $booster.publisher.grpc_call({'x':i,'y':i*2}) 
+        $booster.publisher.sync_call({'x':i,'y':i*2}) 
         """
         request = funboost_grpc_pb2.FunboostGrpcRequest(json_req=Serialization.to_json_str(msg_dict),
                                                         call_type="sync_call")

@@ -51,7 +51,25 @@ class BrokerEnum:
     REDIS_STREAM = 'REDIS_STREAM'  # 基于redis 5.0 版本以后，使用 stream 数据结构作为分布式消息队列，支持消费确认和持久化和分组消费，是redis官方推荐的消息队列形式，比list结构更适合。
     REDIS_BRPOP_LPUSH = 'RedisBrpopLpush'  # 基于redis的list结构但是采用 brpoplpush 双队列形式，和 redis_ack_able的实现差不多，实现上采用了原生命令就不需要lua脚本来实现取出和加入unack了。
     REDIS_PUBSUB = 'REDIS_PUBSUB'  # 基于redis 发布订阅的，发布一个消息多个消费者都能收到同一条消息，但不支持持久化
-
+    
+    """
+    MEMORY_QUEUE: （funboost中最最最核心的broker，没有之一）
+    python内存队列,虽然不支持跨进程 跨脚本 跨机器共享任务，不支持持久化，
+    但是 MEMORY_QUEUE 作为broker 是funboost最最最重要的broker，绝非玩具和只适合简单场景使用，其在funboost中的用途广泛性远超那些正经服务端mq。
+    MEMORY_QUEUE 在 funboost 中的重要性是 sss级，重要性远超 redis kafka rabbbitmq等作为broker.
+    主要原因有：
+    1.queue.Queue超高的性能，没有socket io
+    2.queue.Queue作为消息队列时候，单独做了判断，不进行序列化和反序列化，
+      好处是可以将任何不可json序列化，不可pickle序列化的类型作为函数入参发送到内存Queue中，兼容性灵活性吊打其他broker。
+    3.不是所有人 所有场景都需要分布式 持久化，很多时候都需要使用到内存queue，内存queue经常作为背压、解耦、限流、回调等场景，
+      例如用户经常使用的ThreadpoolExecutor，里面就有一个无界队列的 _work_queue属性，内存queue的使用无处不在。
+    4.使用内存queue，你可以把@boost装饰器当做 tomorrow包或者线程池/asyncio协程池来使用。但是此时funboost的@boost装饰器，
+       吊打并发池和tomorrow装饰器，因为@boost装饰器不仅提供一键多种并发方式，还提供了qps 重试 超时杀死 函数入参缓存过滤等30多种功能，
+       你使用内存queue，可以把@boost当做一个超级装饰器，一个@boost涵盖了所有常见常用的装饰器的功能，一个@boost装饰器抵得上10个常规装饰器叠加使用。
+    5.celery为什么不推荐把memory作为broker？因为celery worker通常在控制台用命令行单独启动，和普通的python脚本中发布任务压根是跨进程跨python解释器了，无法跨程序共享内存队列任务。
+      而funboost启动消费就是普通的python程序，业务脚本发送消息和启动消费就是处在一个进程中，所以可以共享一个内存queue。
+      由于2个框架启动消费方式的区别，memory queue在 celery中是六等公民，但在 funboost 中是超一等公民。
+    """
     MEMORY_QUEUE = 'MEMORY_QUEUE'  # 使用python queue.Queue实现的基于当前python进程的消息队列，不支持跨进程 跨脚本 跨机器共享任务，不支持持久化，适合一次性短期简单任务。
     LOCAL_PYTHON_QUEUE = MEMORY_QUEUE  # 别名，python本地queue就是基于python自带的语言的queue.Queue，消息存在python程序的内存中，不支持重启断点接续。
     

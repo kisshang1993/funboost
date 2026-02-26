@@ -28,4 +28,16 @@ class LocalPythonQueueConsumer(AbstractConsumer):
     def _requeue(self, kw):
         self.local_python_queue.put(kw['body'])
 
+    def _set_rpc_result(self, task_id, kw, current_function_result_status, current_retry_times, **kwargs):
+        """
+        重写父类的 _set_rpc_result，优先检查消息体中是否携带了 _memory_call_future（由 publisher.call 方法塞入）。
+        如果有，直接通过 Future.set_result 将 FunctionResultStatus 设置回去，不依赖 Redis。
+        如果没有，回退到父类的 Redis RPC 逻辑（用于 is_using_rpc_mode=True 的场景）。
+        """
+        future = kw['body']['extra'].pop('_memory_call_future', None)
+        if future is not None:
+            future.set_result(current_function_result_status)
+            return
+        super()._set_rpc_result(task_id, kw, current_function_result_status, current_retry_times, **kwargs)
+
 

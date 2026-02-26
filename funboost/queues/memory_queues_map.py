@@ -17,3 +17,4 @@ class PythonQueues:
         if queue_name not in cls.local_pyhton_queue_name__local_pyhton_queue_obj_map:
             cls.local_pyhton_queue_name__local_pyhton_queue_obj_map[queue_name] = queue.Queue(maxsize=maxsize)
         return cls.local_pyhton_queue_name__local_pyhton_queue_obj_map[queue_name]
+
